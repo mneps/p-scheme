@@ -1,0 +1,162 @@
+# [PackageDev] target_format: plist, ext: tmLanguage
+---
+# name: Promela
+# scopeName: source.promela
+# fileTypes: [pml, promela]
+# uuid: fa220c5d-0ad5-4a52-8027-37e13443b1fc
+
+name: p-scheme
+scopeName: source.pscm
+fileTypes: [pscm]
+uuid: 602979e3-6dc8-4dd7-9972-3f3f26eadeac
+
+
+patterns:
+
+
+# Comments
+- comment: Block comment
+  name: comment.block
+  begin: '\!\@'
+  end: '\#\$'
+
+- comment: Block comment
+  name: begin.block
+  match: '\b(Ready to Go)\b'
+
+# Declare function name as variable name
+- comment: checks
+  name: fun-to-var
+  match: '([\/])([\/])'
+
+# Next line indicator <~
+- comment: <~
+  name: next_line
+  match: '([\<])([\~])'
+
+
+# Primitive arithmetic
+- comment: boolean operations
+  name: arith.ops
+  match: '[\+]|[\-]|[\*]|[\/]|[\%]|[\^]|[\!]|(v)([\/])'
+
+# Comparison
+- comment: boolean operations
+  name: comparison.ops
+  match: '[\<]|[\>]|[\=]' #these three cases cover the <=, =>, <> cases too
+
+# Primitive ops
+- comment: boolean operations
+  name: bool.ops
+  match: '\b(and|or|xor|nand|nor|not)\b'
+
+- comment: other general primitives
+  name: other primitives
+  match: '\b(print|write|input|val|if|ifTrue|ifFalse|empty|while|for|in|claim|done|exit)\b'
+
+
+# Constants
+- comment: string
+  name: string.quoted.double
+  match: '"([^\\"]|\\.)*"'
+
+- comment: integer
+  name: constant.numeric
+  match: '\b(([\.])([0-9])|[0-9]|([0-9])([\.])([0-9]))+\b'
+
+- comment: bools
+  name: constant.bool
+  match: '\b(true|false|maybe|Nothing)\b'
+
+# Types
+- comment: type
+  name: storage.types
+  match: '\b(num|bool|nonetype|str|list|define)\b'
+
+# Checks
+- comment: checks
+  name: checks
+  match: '\b(check-expect|check-error)\b'
+
+# Function names
+- comment: func_names
+  name: func_name
+  match: '\w+(?= +define\b)'
+
+# Variables
+- comment: vars
+  name: vars
+  match: '\b(it|today)\b'
+
+...
+
+
+
+
+
+# # Flow Control
+# - comment: flow control
+#   name: keyword.control
+#   match: '\b(assert|else|fi|unless|xr|xs|do|od|break|skip|atomic)\b'
+
+
+# # Operators
+# - comment: operators
+#   name: keyword.operator
+#   match: '\b(run)\b'
+
+# - comment: defines
+#   #name: keyword.operator
+#   match: '^(#)\s*(define)\s*([a-zA-Z_]+[0-9a-zA-Z_]*)'
+#   captures:
+#     #'1': {name: } C doesn't style the octothorp, so I won't.
+#     '2': {name: keyword.operator}
+#     '3': {name: entity.name.function}
+
+# - comment: label (as in goto)
+#   name: variable.other
+#   match: '\b[a-zA-Z_]+[0-9a-zA-Z_]*(\s)*:'
+
+
+# # Functions
+# - comment: built-in functions
+#   name: entity.name.function
+#   match: '\b(len|nempty|full|nfull|enabled|eval|pc_value)\b'
+
+# - comment: function calls
+#   begin: '\b([a-zA-Z_]+[0-9a-zA-Z_]*)\('
+#   beginCaptures:
+#     '1': {name: entity.name.function}
+#   end: '\)'
+#   patterns:
+#   - include: $self
+
+# - comment: ltls
+#   begin: '\b(ltl)(\s)+([a-zA-Z_]+[0-9a-zA-Z_]*)(\s)*{'
+#   beginCaptures:
+#     '1': {name: storage.type}
+#     '3': {name: entity.name.function}
+#   end: '}'
+#   patterns:
+#   - include: $self
+
+
+# - comment: modifiers
+#   name: storage.modifier
+#   match: '\b(hidden|init|inline|active|local|show)\b'
+
+# # Functions
+# - comment: built-in functions
+#   name: entity.name.function
+#   match: '\b(len|nempty|full|nfull|enabled|eval|pc_value)\b'
+
+
+# - comment: I don't know where to put these
+#   name: storage.modifier
+#   match: '\b(typedef|c_state)\b'
+
+
+# This is not strictly a part of the Promela or C spec, but everyone does it and the compiler handles it.
+- comment: Line comment
+  name: comment.double-slash
+  match: '\;.*$'

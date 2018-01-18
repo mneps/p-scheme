@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>fileTypes</key>
+	<array>
+		<string>pscm</string>
+	</array>
+	<key>name</key>
+	<string>p-scheme</string>
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>begin</key>
+			<string>\!\@</string>
+			<key>comment</key>
+			<string>Block comment</string>
+			<key>end</key>
+			<string>\#\$</string>
+			<key>name</key>
+			<string>comment.block</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>begin</string>
+			<key>match</key>
+			<string>\b(Ready to Go)\b</string>
+			<key>name</key>
+			<string>entity.name.function</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>fun-to-var</string>
+			<key>match</key>
+			<string>([\/])([\/])</string>
+			<key>name</key>
+			<string>constant.language</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>next_line</string>
+			<key>match</key>
+			<string>([&lt;])([\~])</string>
+			<key>name</key>
+			<string>storage.type</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>arith ops</string>
+			<key>match</key>
+			<string>[\+]|[\-]|[\*]|[\/]|[\%]|[\^]|[\!]|(v)([\/])</string>
+			<key>name</key>
+			<string>keyword.control</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>bool ops</string>
+			<key>match</key>
+			<string>\b(and|or|xor|nand|nor|not)\b</string>
+			<key>name</key>
+			<string>keyword.control</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>comparison ops</string>
+			<key>match</key>
+			<string>[&lt;]|[&gt;]|[\=]</string>
+			<key>name</key>
+			<string>keyword.control</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>other primitives</string>
+			<key>match</key>
+			<string>\b(print|write|input|val|if|ifTrue|ifFalse|empty|while|for|in|claim|done|exit)\b</string>
+			<key>name</key>
+			<string>keyword.control</string>
+		</dict>
+
+		<dict>
+			<key>comment</key>
+			<string>string</string>
+			<key>match</key>
+			<string>"([^\\"]|\\.)*"</string>
+			<key>name</key>
+			<string>string.quoted.double</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>integer</string>
+			<key>match</key>
+			<string>\b(([\.])([0-9])|[0-9]|([0-9])([\.])([0-9]))+\b</string>
+			<key>name</key>
+			<string>constant.numeric</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>constant.bool</string>
+			<key>match</key>
+			<string>\b(true|false|maybe|Nothing)\b</string>
+			<key>name</key>
+			<string>constant.language</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>types</string>
+			<key>match</key>
+			<string>\b(num|bool|nonetype|str|list|define)\b</string>
+			<key>name</key>
+			<string>storage.type</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>checks</string>
+			<key>match</key>
+			<string>\b(check-expect|check-error)\b</string>
+			<key>name</key>
+			<string>entity.name.function</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>func_name</string>
+			<key>match</key>
+			<string>\w+(?= +define\b)</string>
+			<key>name</key>
+			<string>entity.name.function</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>vars</string>
+			<key>match</key>
+			<string>\b(it|today)\b</string>
+			<key>name</key>
+			<string>variable.parameter</string>
+		</dict>
+	</array>
+	<key>scopeName</key>
+	<string>source.pscm</string>
+	<key>uuid</key>
+	<string>fa220c5d-0ad5-4a52-8027-37e13443b1fc</string>
+</dict>
+</plist>
+
+
+
+
+<!-- 		<dict>
+			<key>comment</key>
+			<string>flow control</string>
+			<key>match</key>
+			<string>\b(assert|else|fi|unless|xr|xs|do|od|brand|noteak|skip|atomic)\b</string>
+			<key>name</key>
+			<string>keyword.control</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>operators</string>
+			<key>match</key>
+			<string>\b(run)\b</string>
+			<key>name</key>
+			<string>keyword.operator</string>
+		</dict> -->
+<!-- 		<dict>
+			<key>captures</key>
+			<dict>
+				<key>2</key>
+				<dict>
+					<key>name</key>
+					<string>keyword.operator</string>
+				</dict>
+				<key>3</key>
+				<dict>
+					<key>name</key>
+					<string>entity.name.function</string>
+				</dict>
+			</dict>
+			<key>comment</key>
+			<string>defines</string>
+			<key>match</key>
+			<string>^(#)\s*(define)\s*([a-zA-Z_]+[0-9a-zA-Z_]*)</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>label (as in goto)</string>
+			<key>match</key>
+			<string>\b[a-zA-Z_]+[0-9a-zA-Z_]*(\s)*:</string>
+			<key>name</key>
+			<string>variable.other</string>
+		</dict>
+		<dict>
+			<key>comment</key>
+			<string>built-in functions</string>
+			<key>match</key>
+			<string>\b(len|nempty|full|nfull|enabled|eval|pc_value)\b</string>
+			<key>name</key>
+			<string>entity.name.function</string>
+		</dict>
+		<dict>
+			<key>begin</key>
+			<string>\b([a-zA-Z_]+[0-9a-zA-Z_]*)\(</string>
+			<key>beginCaptures</key>
+			<dict>
+				<key>1</key>
+				<dict>
+					<key>name</key>
+					<string>entity.name.function</string>
+				</dict>
+			</dict>
+			<key>comment</key>
+			<string>function calls</string>
+			<key>end</key>
+			<string>\)</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>$self</string>
+				</dict>
+			</array>
+		</dict>
+		<dict>
+			<key>begin</key>
+			<string>\b(ltl)(\s)+([a-zA-Z_]+[0-9a-zA-Z_]*)(\s)*{</string>
+			<key>beginCaptures</key>
+			<dict>
+				<key>1</key>
+				<dict>
+					<key>name</key>
+					<string>storage.type</string>
+				</dict>
+				<key>3</key>
+				<dict>
+					<key>name</key>
+					<string>entity.name.function</string>
+				</dict>
+			</dict>
+			<key>comment</key>
+			<string>ltls</string>
+			<key>end</key>
+			<string>}</string>
+			<key>patterns</key>
+			<array>
+				<dict>
+					<key>include</key>
+					<string>$self</string>
+				</dict>
+			</array>
+		</dict> -->
+
+
+
+
+		
+<!-- 		<dict>
+			<key>comment</key>
+			<string>modifiers</string>
+			<key>match</key>
+			<string>\b(hidden|init|inline|active|local|show)\b</string>
+			<key>name</key>
+			<string>storage.modifier</string>
+		</dict> -->
+
+<!-- 		<dict>
+			<key>comment</key>
+			<string>memer</string>
+			<key>match</key>
+			<string>\b(I like memes)\b</string>
+			<key>name</key>
+			<string>keyword.control</string>
+		</dict> -->
+<!-- 		<dict>
+			<key>comment</key>
+			<string>memer</string>
+			<key>match</key>
+			<string>\b(I like memes)\b</string>
+			<key>name</key>
+			<string>entity.name.function</string>
+		</dict> -->
+<!-- 		<dict>
+			<key>comment</key>
+			<string>I don't know where to put these</string>
+			<key>match</key>
+			<string>\b(typedef|c_state)\b</string>
+			<key>name</key>
+			<string>storage.modifier</string>
+		</dict> -->
+
+<!-- 		<dict>
+			<key>comment</key>
+			<string>Line comment</string>
+			<key>match</key>
+			<string>\/\/.*$</string>
+			<key>name</key>
+			<string>comment.double-slash</string>
+		</dict> -->
