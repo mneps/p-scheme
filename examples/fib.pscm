@@ -1,0 +1,28 @@
+
+Ready to go
+
+!@
+fib
+This function takes in a single parameter, n, which represents the nth
+Fibonacci number.  The function returns the value of that number.
+If the input is invalid (i.e. n<0 or n is not an integer) the function
+will fail a claim.
+#$
+
+[n] fib define
+(0 n >=) (n (n int) =) and claim
+	<~			 		(2 n <) if
+	<~							n
+	((2 n -) fib) ((1 n -) fib) +
+done
+
+0 0 fib check-expect
+1 1 fib check-expect
+3 4 fib check-expect
+55 10 fib check-expect
+
+987 16 fib check-expect
+
+!@ These tests will fail the claim #$
+!@ -1 fib #$
+!@ 1.2 fib #$

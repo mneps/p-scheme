@@ -1,0 +1,60 @@
+
+Ready to go
+
+!@
+This is a simple program that calls upon the user to navigate
+a dangerous labyrinth to save their baby brother.  The idea for
+this program was taken from a homework in Tufts' Intro to
+Computer Science class.
+#$
+
+(0 (false terminated val) val)
+
+(("What do they call you? " input) str) name val
+("." (name "Welcome to the labyrinth, " ++) ++) print
+"Please answer questions with Y for yes and N for No." print
+
+
+<~ 									 						input answer val
+   "Toby is sobbing. Do you wish the Goblin King would take him right now? "
+
+		<~ ((answer "Y" <>) (answer "N" <>) and) while
+"Please enter a valid response: " input answer val
+
+<~ 																		("Y" answer =) if
+<~																	input answer val
+<~ "Okay, he did! Toby's in the labyrinth. Do you want to follow the talking worm? "
+   										((1 terminated +) (true terminated val) val)
+
+<~																			terminated ifTrue
+("." (name "Labyrinth over. You earned 0 points. You're kind of a coward, " ++) ++) print
+
+<~ (((answer "Y" <>) (answer "N" <>) and) (terminated not) and) while
+			"Please enter a valid response: " input answer val
+
+
+<~											(("Y" answer =) (terminated not) and) if
+<~																input answer val
+<~ "You find Hoggle and Ludo! Do you want to face the Goblin King alone? "
+   							 ((1 terminated +) (true terminated val) val)
+
+<~													((1 terminated =) terminated and) ifTrue
+("." (name "Labyrinth over. You earned 1 point. I guess you could do worse, " ++) ++) print
+
+<~ (((answer "Y" <>) (answer "N" <>) and) (terminated not) and) while
+			"Please enter a valid response: " input answer val
+
+
+<~ 			(("Y" answer =) (terminated not) and) if
+<~ "Good choice!  He has no power over you!" print
+   ((1 terminated +) (true terminated val) val)
+
+<~												((1 terminated =) terminated and) ifTrue
+("!" (name "Labyrinth over.  You earned 3 points.  You were so close, " ++) ++) print
+
+							<~ terminated ifFalse
+"Labyrinth over.  You earned 6 points." print
+												<~ terminated ifFalse
+("! You get to go home!" (name "You did perfectly, " ++) ++) print
+
+

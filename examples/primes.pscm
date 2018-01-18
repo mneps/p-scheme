@@ -1,0 +1,37 @@
+
+Ready to go
+
+!@
+prime_test
+This function takes in a single parameter, n and returns spicy if n is prime
+and normie if it is not.
+The function fails a claim if the input is invalid (i.e. n<0 or n is a
+non-integer)
+#$
+
+[n] prime_test define
+	((0 n >) ((n int) n =) and) claim
+	<~ (2 n prime_help) 1 = if
+	<~					true
+					   false
+done
+
+[n, factor] prime_help define
+	<~ 							1 n = if
+	<~ 								0
+	<~			(2 (factor * n) <) if
+	<~ 				   			1
+	<~ 		(0 (factor n %) =) if
+	<~ 				        0
+	(1 factor +) n prime_help 
+done
+
+false 1 prime_test check-expect
+true 2 prime_test check-expect
+true seven prime_test check-expect
+true 83 prime_test check-expect
+false 91 prime_test check-expect
+
+!@ These tests will fail the claim #$
+!@ 0 prime_test #$
+!@ 4.5 prime_test #$

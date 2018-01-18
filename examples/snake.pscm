@@ -1,0 +1,143 @@
+
+Ready to go
+
+!@
+This program runs a simple, terminal-based version of the classic snake game.
+It is the most complicated program that has been implemented in p-scheme.
+The need to optimize p-scheme is more apparent while running this program
+than it is anywhere else.  Luckily, that's my next project :)
+#$
+
+41 WIDTH val
+11 HEIGHT val
+(2 (1 WIDTH -) /) y val
+(2 (1 HEIGHT -) /) x val
+0 score val
+
+[] main define
+	newList board val
+
+	<~ 		(HEIGHT range) in i for
+	board newList append board val
+
+	<~														(HEIGHT range) in i for
+	<~														(WIDTH range) in j for
+	<~											(0 i =) ((1 HEIGHT -) i =) or if
+	<~     board (today i +) ((board (i today +) get) "+" append) put board val
+	<~											(0 j =) ((1 WIDTH -) j =) or if
+	<~ board (today i +) ((board (i today +) get) "|" append) put board val
+	   board (today i +) ((board (i today +) get) " " append) put board val
+
+
+	((board (today x +) get) (today y +) "s" put) row val
+	newList new_board val
+
+	<~										(HEIGHT range) in i for
+	<~ 													i x <> if
+	<~ (new_board (board (today i +) get) append) new_board val
+						   (new_board row append) new_board val
+
+
+    (new_board get_new_snack) board val
+    opening_message
+    board play_game
+
+done
+
+[board] get_new_snack define
+	((2 HEIGHT -) 1 random) snack_x val
+	((2 WIDTH  -) 1 random) snack_y val
+
+	((board (today snack_x +) get) (today snack_y +) "x" put) row val
+
+	newList new_board val
+	
+	<~		((board (today snack_x +) get) (today snack_y +) get) " " <> if
+	<~ 												board get_new_snack
+	<~											(HEIGHT range) in i for
+	<~ 												i snack_x <> if
+	<~ (new_board (board (today i +) get) append) new_board val
+						   (new_board row append) new_board val
+done
+
+
+[board] play_game define
+	board print_board
+	false new_snack val
+	getch move val
+	["a", "s", "d", "w"] valid_moves val
+
+
+	((board (today x +) get) (today y +) "#" put) row val
+	newList new_board val
+	<~												valid_moves in i for
+	<~													move i = ifTrue
+	<~										(HEIGHT range) in i for
+	<~													i x <> if
+	<~ (new_board (board (today i +) get) append) new_board val
+						   (new_board row append) new_board val
+
+    <~					"a" move = if
+    <~			  (1 y -) y_g val
+    <~				"s" move = if
+    <~		  (1 x +) x_g val
+    <~			"d" move = if
+    <~	  (1 y +) y_g val
+    <~		"w" move = if
+    <~	 (1 x -) x_g val
+       	 board play_game
+
+    <~ (new_board (today x +) get) (today y +) get "x" = ifTrue
+      										true new_snack val
+	<~			new_snack ifTrue
+	(score 10 +) score_g val
+
+	((new_board (today x +) get) (today y +) "s" put) row val
+	newList board val
+
+	<~ (((new_board (today x +) get) (today y +) get) "x" <>) and if
+	<~ (((new_board (today x +) get) (today y +) get) " " <>)
+	<~												losing_message
+	<~									   (HEIGHT range) in i for
+	<~													i x <> if
+	<~	(board (new_board (today i +) get) append) board val
+								(board row append) board val
+
+	<~				new_snack ifTrue
+	board get_new_snack board val
+	board play_game
+done
+
+[board] print_board define
+	clear_screen
+
+	<~ 					board in row for
+	<~ ((row length) range) in char for
+	<~ 			(1 WIDTH -) char <> if
+	<~ row (today char +) get write
+	   row (today char +) get print
+
+   ((score str) "Score: " ++) score_message val
+   score_message print
+done
+
+
+[] losing_message define
+	clear_screen
+	("." ((score str) "You lost! Your final score was " ++) ++) print
+	exit
+done
+
+[] opening_message define
+	clear_screen
+	"Welcome to a game of snake!" print
+	"Use the <'>a<'>, <'>d<'>, <'>w<'>, and <'>s<'> keys to move left, right, up, and down, respectively." print
+	"Don't run into your own tail or go off the board.  Each <'>x<'> is worth 10 points." print
+	"Good luck!" print
+	"(Press any key to begin)" print
+	getch
+done
+
+main
+
+

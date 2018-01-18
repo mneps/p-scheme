@@ -1,0 +1,23 @@
+
+Ready to go
+
+!@
+This is a simple program that asks the user to enter eight numbers and prints
+out the numbers' sum.  If the user enters a non-number, the program will
+terminate with an error
+#$
+
+
+newList x val
+<~								(8 (x length) <) while
+x ("Please enter a number: " input) append x val
+
+0 sum val
+<~			((x length) range) in i for
+((x (today i +) get) sum +) sum val
+
+((sum str) "The sum of your numbers is " ++) print
+
+
+
+

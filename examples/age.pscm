@@ -1,0 +1,19 @@
+
+Ready to go
+
+!@
+This is a simple program that asks the user to enter their age.
+The program will then calculate how many months, days, and hours
+old the user is.  If a negative number of years is entered, the
+the program will not crash, but will produce bogus results.
+The program does not account for leap years and assumes the user's
+age is exactly the number of years entered.
+#$
+
+"Please enter your age in years: " input age val
+
+(" months old." (((age 12 *) str) "You are " ++) ++) print
+(" days old." (((age 365 *) str) "You are " ++) ++) print
+(" hours old." (((age (365 24 *) *) str) "You are " ++) ++) print
+
+

@@ -1,0 +1,32 @@
+
+Ready to go
+
+!@
+sigma
+This function takes in two parameters, m and n, and calculates the summation
+from m to n as follows: m+(m+1)+...+(n-1)+n.
+The function will return the sum.
+If input is invalid (i.e. n>m or n or m is a non-integer) the function will
+fail a claim.
+#$
+
+[m, n] sigma define
+n m <= claim
+<~ 					n m < if
+<~ ((n (1 m +) sigma) m +)
+<~			(n m =) ifTrue
+						m
+done
+
+45 10 5 sigma check-expect
+-28 -1 -7 sigma check-expect
+0 2 -2 sigma check-expect
+1 1 1 sigma check-expect
+-1 -1 -1 sigma check-expect
+0 0 0 sigma check-expect
+
+!@ These tests will fail the claim #$
+!@ 3 1.2 sigma #$
+!@ 3.2 1 sigma #$
+!@ 1 2 sigma #$
+!@ -2 -1 sigma #$
