@@ -20,8 +20,7 @@ done
 1 1 fib check-expect
 3 4 fib check-expect
 55 10 fib check-expect
-
-987 16 fib check-expect
+233 13 fib check-expect
 
 !@ These tests will fail the claim #$
 !@ -1 fib #$

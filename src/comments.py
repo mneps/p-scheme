@@ -3,12 +3,9 @@
 # comments.py
 # This file is responsible for handling comment sanitization and for raising
 # errors if a comment or a string is entered in an incorrect format.  The
-# handle_comments() function is unfortunately some of the worst code in
-# p-scheme, and I apologize for that.  I ran into a number of issues accounting
-# for all the variaous edge-cases and the function kept growing and growing.  I
-# believe it works, but by no means is the code elegant or easy to read.  I
-# really don't feel like going back and working on it more though, and luckily
-# this is a personal project so that decision is mine to make :)
+# handle_comments() function is admittedly difficult to read, and I apologize
+# for that.  I ran into a number of issues accounting for the various edge-cases
+# and the function kept growing and growing.
 #
 
 
