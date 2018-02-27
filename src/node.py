@@ -25,6 +25,10 @@ class Node:
         self.children = [None] * self.numChildren #[None]*-1 = []
         self.root = root # will be a boolean value
         self.id_num = id_num
+        if numChildren == -1:
+            self.result = val
+        else:
+            self.result = None
 
     # The four functions below are all fairly self-explanatory.
     def getChild(self, i):
@@ -70,23 +74,28 @@ class Node:
             conds_and_loops = ["if", "ifTrue", "ifFalse", "while", "for"]
             if self.val not in conds_and_loops:
                 for i in range(self.numChildren):
-                    self.children[i] = \
+                    self.children[i].result = \
                             (self.children[i]).evaluate(varEnv, funEnv, locEnv)
-                self.children = [(a,b) for (a,b) in self.children if b != None]
+                #self.children = [(a,b) for (a,b) in self.children if b != None]
                 for i in range(len(self.children)):
-                    if self.children[i][0] == "not_error":
-                        self.children[i] = self.children[i][1]
+                    if self.children[i].result[0] == "not_error":
+                        self.children[i].result = self.children[i].result[1]
                     else:
-                        return self.children[i]
+                        return self.children[i].result
         else:
             return ("not_error", self.val)
-        # [:3] is necessary because user-defined functions have line-numbers,
-        # which primitive functions do not
-        (fun, op, arrity) = funEnv.getVal(self.val, "function")[:3]
+
+        (fun, op) = funEnv.getVal(self.val, "function")[:2]
         if self.val not in global_vars.PRIMITIVES:
             global_vars.curr_function.append(self.val)
-        (error, val) = fun(self.children, varEnv, locEnv, funEnv, op, \
-                                                                    self.id_num)
+
+        args = reduce(lambda acc, x: acc+[x.result], self.children, [])
+        args = filter(lambda x: x != None, args)
+        #print args
+        #args = []
+        #for i in range(numChildren):
+        #    args.append(self.children[i].result)
+        (error, val) = fun(args, varEnv, locEnv, funEnv, op, self.id_num)
         return (error, str(val))
 
 

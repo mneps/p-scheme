@@ -18,6 +18,7 @@ from type_checking import *
 
 # See the comment at the top of the file for this function's purpose.
 def definePrimitive(args, constraints, varEnv, locEnv):
+    #print args
     if len(args) != len(constraints):
         return ("error", "Error: Incorrect number of arguments")
 

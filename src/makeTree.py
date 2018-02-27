@@ -12,15 +12,22 @@
 
 from node import *
 
-def makeTree(tree, funEnv, id_num):
+def makeTree(tree, funEnv, id_num, list_fun):
     val = tree.update_string()
     isRoot = tree.checkIfRoot()
-    if funEnv.inEnv(val):
+    LIST_FUNCTIONS = ["fold", "map", "filter", "all", "exists"]
+
+    if funEnv.inEnv(val) and not list_fun:
+        if val in LIST_FUNCTIONS:
+            list_fun = True
         node = Node(val, funEnv.getArrity(val), isRoot, tree.update_num_nodes())
         tree.updateNoneCount(funEnv.getArrity(val))
         for i in range(node.getNumChildren()):
+            if i != 0 and list_fun:
+                list_fun = False
             tree.updateNoneCount(-1)
-            node.addChild(makeTree(tree, funEnv, tree.get_num_nodes()), i)
+            node.addChild(makeTree(tree, funEnv, tree.get_num_nodes(), \
+                                                                  list_fun), i)
         return node
     else:
         if val == None:

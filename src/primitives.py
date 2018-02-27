@@ -41,7 +41,6 @@
 
 
 import itertools
-import copy
 import math
 import global_vars
 from define_primitive import *
@@ -66,6 +65,20 @@ def verifyResult(val, varEnv, locEnv):
     val_list = map(lambda x: x if not isinstance(x, bool) else "true" \
                                             if x else "false", val_list)
     return ("not_error", val_list[0])
+
+
+# This function takes in an argument and verifies that the argument is a
+# function.  Used by higher-order list functions, which take a function as an
+# argument
+def valid_function_check(arg, varEnv, locEnv, funEnv):
+    if isLiteral(arg):
+        return ("error", "Error: Bad type")
+    if not funEnv.inEnv(arg):
+        if not varEnv.inEnv(arg) and not locEnv.inEnv(arg):
+            return ("error", "Error: Argument does not exist")
+        else:
+            return ("error", "Error: Bad type")
+    return ("not_error", arg)
 
 # Function called when both arguments must be numbers.
 def numArrityTwo(args, varEnv, locEnv, funEnv, op, id_num):
@@ -397,6 +410,162 @@ def listInit(args, varEnv, locEnv, funEnv, op, id_num):
     return ("not_error", new_list)
 
 
+# Executes a mapping function.  Since the first argument is a function it is
+# handled separately.
+def listMap(args, varEnv, locEnv, funEnv, op, id_num):
+    if len(args) != 2:
+        return ("error", "Error: Incorrect number of arguments")
+
+    (error, val) = valid_function_check(args[0], varEnv, locEnv[-1], funEnv)
+    if error == "error":
+        return (error, val)
+    args[0] = val
+
+    constraints = [[["list"]]]
+    val_list = definePrimitive([args[1]], constraints, varEnv, locEnv[-1])
+    if val_list[0] == "error":
+        return val_list
+
+    new_list = "[]"
+    (fun, op) = funEnv.getVal(args[0], "function")[:2]
+    (append_fun, append_op) = funEnv.getVal("append", "function")[:2]
+
+    val_list[0] = string_to_list(val_list[0])
+    for i in val_list[0]:
+        if args[0] not in global_vars.PRIMITIVES:
+            global_vars.curr_function.append(args[0])
+        if isinstance(i, list):
+            i = list_to_string(i)
+        else:
+            i = str(i)
+
+        (error, val) = fun([i], varEnv, locEnv, funEnv, op, id_num)
+        if error == "error":
+            return (error, val)
+        (error, new_list) = append_fun([str(val), new_list], varEnv, locEnv, \
+                                                      funEnv, append_op, id_num)
+        if error == "error":
+            return (error, new_list)
+
+    return ("not_error", new_list)
+
+
+# Executes a mapping function.  Since the first argument is a function it is
+# handled separately.
+def listFold(args, varEnv, locEnv, funEnv, op, id_num):
+    if len(args) != 3:
+        return ("error", "Error: Incorrect number of arguments")
+
+    (error, val) = valid_function_check(args[0], varEnv, locEnv[-1], funEnv)
+    if error == "error":
+        return (error, val)
+    args[0] = val
+
+    constraints = [[global_vars.ALL_TYPES], [["list"]]]
+    val_list = definePrimitive(args[1:], constraints, varEnv, locEnv[-1])
+    if val_list[0] == "error":
+        return val_list
+
+    (fun, op) = funEnv.getVal(args[0], "function")[:2]
+
+    val_list[1] = string_to_list(val_list[1])
+    val = val_list[0]
+
+    for i in val_list[1]:
+        if args[0] not in global_vars.PRIMITIVES:
+            global_vars.curr_function.append(args[0])
+        if isinstance(i, list):
+            i = list_to_string(i)
+        else:
+            i = str(i)
+        if isinstance(val_list[0], list):
+            val_list[0] = list_to_string(val_list[0])
+        if isinstance(val_list[0], bool):
+            if val_list[0]:
+                val_list[0] = "true"
+            else:
+                val_list[0] = "false"
+        else:
+            val_list[0] = str(val_list[0])
+
+        (error, val) = fun([i, val_list[0]], varEnv, locEnv, funEnv, op, id_num)
+        if error == "error":
+            return (error, val)
+        val_list[0] = val
+    return ("not_error", val)
+
+
+# Executes a filtering function.  Since the first argument is a function it is
+# handled separately.
+def listFilter(args, varEnv, locEnv, funEnv, op, id_num):
+    if len(args) != 2:
+        return ("error", "Error: Incorrect number of arguments")
+
+    (error, val) = valid_function_check(args[0], varEnv, locEnv[-1], funEnv)
+    if error == "error":
+        return (error, val)
+    args[0] = val
+
+    constraints = [[["list"]]]
+    val_list = definePrimitive([args[1]], constraints, varEnv, locEnv[-1])
+    if val_list[0] == "error":
+        return val_list
+
+    new_list = "[]"
+    (fun, op) = funEnv.getVal(args[0], "function")[:2]
+    (append_fun, append_op) = funEnv.getVal("append", "function")[:2]
+
+    val_list[0] = string_to_list(val_list[0])
+    for i in val_list[0]:
+        if args[0] not in global_vars.PRIMITIVES:
+            global_vars.curr_function.append(args[0])
+        if isinstance(i, list):
+            i = list_to_string(i)
+        else:
+            i = str(i)
+
+        (error, val) = fun([i], varEnv, locEnv, funEnv, op, id_num)
+        if error == "error":
+            return (error, val)
+        if val == "true":
+            (error, new_list) = append_fun([str(i), new_list], varEnv, \
+                                              locEnv, funEnv, append_op, id_num)
+        elif val != "false":
+            return ("error", "Error: Bad type")
+        if error == "error":
+            return (error, new_list)
+
+    return ("not_error", new_list)
+
+
+# Uses the listFilter function to defermine if all the elements in the list when
+# passed in as an argument to a given function return true.
+def listAll(args, varEnv, locEnv, funEnv, op, id_num):
+    (error, val) = listFilter(args, varEnv, locEnv, funEnv, op, id_num)
+    if error == "error":
+        return (error, val)
+
+    constraints = [[["list"]]]
+    val_list = definePrimitive([args[1]], constraints, varEnv, locEnv[-1])
+
+    if len(string_to_list(val_list[0])) == len(string_to_list(val)):
+        return ("not_error", "true")
+    else:
+        return ("not_error", "false")
+
+# Uses the listFilter function to defermine if any element in a list when passed
+# in as an argument to a given function return true.
+def listExists(args, varEnv, locEnv, funEnv, op, id_num):
+    (error, val) = listFilter(args, varEnv, locEnv, funEnv, op, id_num)
+    if error == "error":
+        return (error, val)
+
+    if len(string_to_list(val)) > 0:
+        return ("not_error", "true")
+    else:
+        return ("not_error", "false")
+
+
 # For the casting functions below, only certain types can be cast to other
 # types.  A list can be cast to another type, but only if it is a singleton
 # list (eg. [1] num will produce 1 but [1, 2] num will produce an error).
@@ -484,7 +653,7 @@ def castList(args, varEnv, locEnv, funEnv, op, id_num):
     if isList(val_list[0]):
         return ("not_error", val_list[0])
     if isinstance(val_list[0], bool):
-        return ("not_error", "[spicy]" if val_list[0] else "[false]")
+        return ("not_error", "[true]" if val_list[0] else "[false]")
     return ("not_error", op(val_list[0]))
 
 
@@ -545,7 +714,7 @@ def defineVar(args, varEnv, locEnv, funEnv, op, id_num=None):
     for i in reserved_symbols:
         if i in args[0]:
             return ("error", "Error: Name contains reserved symbol")
-    if (len(args[0]) > 2) and ("//" in args[0][2:] or args[0][:-2] == "_g"):
+    if "//" in args[0][2:] or args[0][:-2] == "_g":
         return ("error", "Error: Name contains reserved symbol")
 
     if len(args[0]) > 2: #avoids the necessity of a try-except
@@ -646,7 +815,7 @@ def empty(args, varEnv, locEnv, funEnv, op, id_num):
 
 # For if-statements with both a true and a false branch
 def conditional(args, varEnv, locEnv, funEnv, op, id_num):
-    tree_section = copy.deepcopy((global_vars.curr_tree[-1]).get_node(id_num))
+    tree_section = global_vars.curr_tree[-1].get_node(id_num)
     for i in range(3):
         if (tree_section.getChild(i)).getVal() == None:
             return ("error", "Error: Incorrect number of arguments")
@@ -674,7 +843,7 @@ def conditional(args, varEnv, locEnv, funEnv, op, id_num):
 
 # For if statements with only one branch (ifTrue and ifFalse)
 def condArrityTwo(args, varEnv, locEnv, funEnv, op, id_num):
-    tree_section = copy.deepcopy((global_vars.curr_tree[-1]).get_node(id_num))
+    tree_section = global_vars.curr_tree[-1].get_node(id_num)
     for i in range(2):
         if (tree_section.getChild(i)).getVal() == None:
             return ("error", "Error: Incorrect number of arguments")
@@ -703,7 +872,7 @@ def condArrityTwo(args, varEnv, locEnv, funEnv, op, id_num):
 
 # While loops
 def wloop(args, varEnv, locEnv, funEnv, op, id_num, prev_val="Nothing"):
-    tree_section = copy.deepcopy((global_vars.curr_tree[-1]).get_node(id_num))
+    tree_section = global_vars.curr_tree[-1].get_node(id_num)
     if (tree_section.getChild(0)).getVal() == None or \
        (tree_section.getChild(1)).getVal() == None:
        return ("error", "Error: Incorrect number of arguments")
@@ -727,7 +896,7 @@ def wloop(args, varEnv, locEnv, funEnv, op, id_num, prev_val="Nothing"):
 # For loops
 def floop(args, varEnv, locEnv, funEnv, op, id_num, prev_val="Nothing", \
                                                                    iteration=0):
-    tree_section = copy.deepcopy((global_vars.curr_tree[-1]).get_node(id_num))
+    tree_section = global_vars.curr_tree[-1].get_node(id_num)
     for i in range(4):
         if (tree_section.getChild(i)).getVal() == None:
             return ("error", "Error: Incorrect number of arguments")
@@ -813,9 +982,9 @@ def userFun(args, varEnv, locEnv, funEnv, op, id_num):
     expressions = funEnv.getVal(global_vars.curr_function[-1], "function")[1][1:]
     for i in range(len(expressions)):
         emptyTree = ExpressionTree(expressions[i])
-        expTree = makeTree(emptyTree, funEnv, 0)
+        expTree = makeTree(emptyTree, funEnv, 0, False)
         expTree.epsteinCheck(varEnv, funEnv, emptyTree, locEnv)
-        global_vars.curr_tree.append(copy.deepcopy(expTree))
+        global_vars.curr_tree.append(expTree)
 
         if emptyTree.get_string_length() == 0:
             if expTree.sevenCheck():

@@ -16,7 +16,6 @@
 
 
 from __future__ import print_function #otherwise print cannot be in a lambda
-import copy
 import math
 import re
 import operator
@@ -49,7 +48,7 @@ def addPrimitives():
     funEnv.addBind("*", (numArrityTwo, operator.mul, 2))
     funEnv.addBind("/", (numArrityTwo, operator.div, 2))
     funEnv.addBind("%", (numArrityTwo, operator.mod, 2))
-    funEnv.addBind("^", (numArrityTwo, operator.pow, 2))
+    funEnv.addBind("**", (numArrityTwo, operator.pow, 2))
     funEnv.addBind("random", (numArrityTwo, randint, 2))
     funEnv.addBind("!", (numArrityOne, math.factorial, 1))
     funEnv.addBind("v/", (numArrityOne, math.sqrt, 1))
@@ -106,6 +105,12 @@ def addPrimitives():
     funEnv.addBind("str", (castStr, (lambda x: "\""+x+"\""), 1))
     funEnv.addBind("list", (castList, (lambda x: "["+str(x)+"]"), 1))
     funEnv.addBind("nonetype", (castNonetype, None, 1))
+    # higher-order list functions
+    funEnv.addBind("map", (listMap, None, 2))
+    funEnv.addBind("fold", (listFold, None, 3))
+    funEnv.addBind("filter", (listFilter, None, 2))
+    funEnv.addBind("all", (listAll, None, 2))
+    funEnv.addBind("exists", (listExists, None, 2))
     # basic operations
     funEnv.addBind("print", (printVar, (lambda x: print(x)), 1))
     funEnv.addBind("write", (printVar, (lambda x: sys.stdout.write(str(x))), 1))
@@ -246,6 +251,9 @@ def function_check(lines_to_evaluate, origLines, funEnv):
                     if i in expression[1]:
                         val = "Error: Name contains reserved symbol"
                         origLines.RaiseException(lineCount, numLines, val, 3)
+                # if expression[1][-2:] == "_f":
+                #     val = "Error: Name contains reserved symbol"
+                #     origLines.RaiseException(lineCount, numLines, val, 3)
 
                 val_list[0] = string_to_list(val_list[0])
 
@@ -288,7 +296,6 @@ def function_check(lines_to_evaluate, origLines, funEnv):
 # that that happens.
 def getErrorLine(funEnv, origLines, error):
     global_vars.function_error_check = True
-    print (funEnv.getVal(global_vars.curr_function[-1], "function"))
     fun_start = funEnv.getVal(global_vars.curr_function[-1], "function")[3][0]
     fun_stop = funEnv.getVal(global_vars.curr_function[-1], "function")[3][1]
     error_num = int(error.split("@")[1])+1
@@ -374,9 +381,9 @@ def evaluate(lines, origLines, varEnv, funEnv):
 
         locEnv = Environment()
         emptyTree = ExpressionTree(expression)
-        expTree = makeTree(emptyTree, funEnv, 0)
+        expTree = makeTree(emptyTree, funEnv, 0, False)
         expTree.epsteinCheck(varEnv, funEnv, emptyTree, [locEnv])
-        global_vars.curr_tree.append(copy.deepcopy(expTree))
+        global_vars.curr_tree.append(expTree)
 
         if emptyTree.get_string_length() == 0:
             if expTree.sevenCheck():

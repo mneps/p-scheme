@@ -1,0 +1,107 @@
+
+Ready to go
+
+
+!@
+  Finds the maximum of two elements.  Behavior is undefined if the elements are
+  not both either numbers or strings.
+#$
+[x, y] max define
+	<~ y x > if
+	<~		x
+			y
+done
+
+!@
+  Finds the maximum of a non-empty list of numbers.  Behavior is undefined if
+  the list passed in contains anything other than numbers.  A claim will fail if
+  the list passed in is empty.
+#$
+[xs] list_max define
+	((xs length) 0 <>) claim
+	xs (xs today get) max fold
+done
+
+seven [3, 6, 1, 6, 7, 3] list_max check-expect
+
+
+!@
+  Finds the sum of all elements in a non-empty list of numbers.  Behavior is
+  undefined if the list passed in contains anything other than numbers.  A claim
+  will fail if the list passed in is empty.
+#$
+[xs] sum define
+	((xs length) 0 <>) claim
+	xs 0 + fold
+done
+
+26 [3, 6, 1, 6, 7, 3] sum check-expect
+
+
+!@
+  Finds the product of all elements in a non-empty list of numbers.  Behavior is
+  undefined if the list passed in contains anything other than numbers.  A claim
+  will fail if the list passed in is empty.
+#$
+[xs] product define
+	((xs length) 0 <>) claim
+	xs 1 * fold
+done
+
+2268 [3, 6, 1, 6, 7, 3] product check-expect
+
+
+
+!@
+  Takes in two lists and appends the second list onto the end of the first.  
+  Behavior is undefined if either argument is not a list.
+#$
+[xs, ys] append_lists define
+	ys xs append fold
+done
+
+[] [] [] append_lists check-expect
+[1, 2, 3] [] [1, 2, 3] append_lists check-expect
+[1, 2, 3] [1, 2, 3] [] append_lists check-expect
+[1, 2, 3, 4, 5, 6] [4, 5, 6] [1, 2, 3] append_lists check-expect
+
+!@
+  Puts an element at the front of a list.  Behavior is undefined if the xs
+  argument is not a list.
+#$
+[x, xs] put_front define
+	xs today x insert
+done
+
+!@
+  Reverses the order of a list.  Behavior is undefined if the argument passed in
+  is not a list.
+#$
+[xs] reverse define
+	xs newList put_front fold
+done
+
+[] [] reverse check-expect
+[6, 5, 4, 3, 2, 1] [1, 2, 3, 4, 5, 6] reverse check-expect
+
+
+!@
+  Adds one to the number passed in.  Behavior is undefined if x is not a number.
+#$
+[x, y] increment define
+	1 y +
+done
+
+!@
+  Returns the length of a list.  Behavior is undefined if the argument passed in
+  is not a list.
+#$
+[xs] len define
+	xs 0 increment fold
+done
+
+0 [] len check-expect
+6 [1, 2, 3, 4, 5, 6] len check-expect
+
+
+

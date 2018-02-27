@@ -23,7 +23,8 @@ PRIMITIVES = ["it", "+", "-", "*", "/", "%", "^", "!", "v/", "int", "and", \
 			  "nonetype", "print", "input", "val", "check-error", \
 			  "check-expect", "empty", "if", "ifTrue", "ifFalse", "while", \
 			  "for", "claim", "define", "done", "wholesomeRemark", "exit", \
-			  "random", "write", "getch", "clear_screen"]
+			  "random", "write", "getch", "clear_screen", "map", "fold", \
+			  "filter", "all", "exists"]
 function_check = False
 user_function = 0
 curr_function = []

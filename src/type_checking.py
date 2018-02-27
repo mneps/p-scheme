@@ -26,9 +26,6 @@ def isNum(x):
 def isBool(x):
     return (x == "true" or x == "false" or x == "maybe")
 
-def isNothing(x):
-    return (x == "Nothing")
-
 
 def isString(x):
     # calling isString() on a number would otherwise return an error since
@@ -49,9 +46,12 @@ def isList(x):
 
     return (x[0] == "[" and x[-1] == "]")   #if x is of the [___] format
 
+def isNothing(x):
+    return (x == "Nothing")
+
 
 def isLiteral(x):
-    return (isNum(x) or isBool(x) or isNothing(x) or isString(x) or isList(x))
+    return (isNum(x) or isBool(x) or isString(x) or isList(x) or isNothing(x))
 
 # must update as more types are added
 def isValidType(x):
@@ -62,12 +62,12 @@ def getLiteralType(x):
         return "num"
     if isBool(x):
         return "bool"
-    if isNothing(x):
-        return "nonetype"
     if isString(x):
         return "str"
     if isList(x):
         return "list"
+    if isNothing(x):
+        return "nonetype"
     return ("error", "Error: Bad type")  
 
 
@@ -85,11 +85,11 @@ def check_expected_literal_type(arg, constraint):
         return arg
     if isBool(arg) and constraint == "bool":
         return arg
-    if isNothing(arg) and constraint == "nonetype":
-        return arg
     if isString(arg) and constraint == "str":
         return arg
     if isList(arg) and constraint == "list":
+        return arg
+    if isNothing(arg) and constraint == "nonetype":
         return arg
     return ("error", "Error: Bad type")
 
@@ -110,33 +110,26 @@ def general_type(arg, constraints, varEnv, locEnv):
             arg_split[0] = arg_split[0][2:]
 
     if arg_split[0] != arg: #if var contains a dot
-        if isLiteral(arg_split[0]):
+        env_fun = lambda acc, x: acc or x.inEnvandType(arg_split[0], arg_split[1])
+        if reduce(env_fun, [locEnv, varEnv], False) and \
+                                                 arg_split[1] in constraints[0]:
+            arg = arg_split[0]
+            constraints = [arg_split[1]]
+        elif isLiteral(arg_split[0]):
             return (("error", "Error: Argument does not support dot operation"), \
                                                                     constraints)
-        if arg_split[1] not in global_vars.ALL_TYPES:
+        elif arg_split[1] not in global_vars.ALL_TYPES:
             return (("error", "Error: Argument type does not exist"), constraints)
-        if arg_split[1] not in constraints[0]:
+        elif arg_split[1] not in constraints[0]:
             return (("error", "Error: Bad type"), constraints)
-        if not varEnv.inEnv(arg_split[0]) and not varEnv.inEnv(arg_split[0]):
+        elif not varEnv.inEnv(arg_split[0]) and not varEnv.inEnv(arg_split[0]):
             return (("error", "Error: Argument does not exist"), constraints)
-        if isUndesirableType(arg_split[1], locEnv.getVarTypes(arg_split[0])) and \
+        elif isUndesirableType(arg_split[1], locEnv.getVarTypes(arg_split[0])) and \
            isUndesirableType(arg_split[1], varEnv.getVarTypes(arg_split[0])):
             return (("error", "Error: Bad type"), constraints)
-        arg = arg_split[0]
-        constraints = [arg_split[1]]
     else: #if var is a literal
-        if isLiteral(arg):
-            for i in range(len(constraints[0])):
-                errorTest = check_expected_literal_type(arg, constraints[0][i])
-                if errorTest == "" or errorTest[0] != "error":
-                    arg = errorTest
-                    constraints = [getLiteralType(arg)]
-                    break
-                elif i == len(constraints[0])-1:
-                    return (errorTest, constraints)
-        elif not locEnv.inEnv(arg) and not varEnv.inEnv(arg):
-            return (("error", "Error: Argument does not exist"), constraints)
-        else: #if var is a variable with no dot
+        env_fun = lambda acc, x: acc or x.inEnv(arg_split[0])
+        if reduce(env_fun, [locEnv, varEnv], False):
             for env in [locEnv, varEnv]:
                 typesOfArg = env.getVarTypes(arg)
                 intersection = [x for x in typesOfArg if x in constraints[0]]
@@ -146,6 +139,28 @@ def general_type(arg, constraints, varEnv, locEnv):
                 else:
                     constraints = intersection
                     break
+        elif isLiteral(arg):
+            for i in range(len(constraints[0])):
+                errorTest = check_expected_literal_type(arg, constraints[0][i])
+                if errorTest == "" or errorTest[0] != "error":
+                    arg = errorTest
+                    constraints = [getLiteralType(arg)]
+                    break
+                elif i == len(constraints[0])-1:
+                    return (errorTest, constraints)
+        #elif not locEnv.inEnv(arg) and not varEnv.inEnv(arg):
+        else:
+            return (("error", "Error: Argument does not exist"), constraints)
+        #else: #if var is a variable with no dot
+            # for env in [locEnv, varEnv]:
+            #     typesOfArg = env.getVarTypes(arg)
+            #     intersection = [x for x in typesOfArg if x in constraints[0]]
+            #     if intersection == []:
+            #         if env == varEnv:
+            #             return (("error", "Error: Bad type"), constraints)
+            #     else:
+            #         constraints = intersection
+            #         break
     return (arg, constraints)
 
 
@@ -178,12 +193,12 @@ def casted(arg):
         return float(arg)
     if isBool(arg):
         return getBoolVal(arg)
-    if isNothing(arg):
-        return str(arg)
     if isString(arg):
         return str(arg)
     if isList(arg):
         return arg
+    if isNothing(arg):
+        return str(arg)
 
 
 # Translates p-scheme booleans into python booleans
@@ -201,12 +216,10 @@ def getBoolVal(arg):
 # By the time this function is called, all potential errors should have been
 # handled so arg will either be a literal or a variable of type constraint
 def getValofType(arg, constraint, varEnv, locEnv):
-    if isLiteral(arg):
-        return casted(arg)
-
     for env in [locEnv, varEnv]:
         if env.inEnvandType(arg, constraint[0]):
             return casted(env.getVal(arg, constraint[0]))
         else:
             continue
 
+    return casted(arg) #if arg is not a variable, it must be a literal
