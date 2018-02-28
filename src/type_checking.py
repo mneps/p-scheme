@@ -148,19 +148,8 @@ def general_type(arg, constraints, varEnv, locEnv):
                     break
                 elif i == len(constraints[0])-1:
                     return (errorTest, constraints)
-        #elif not locEnv.inEnv(arg) and not varEnv.inEnv(arg):
         else:
             return (("error", "Error: Argument does not exist"), constraints)
-        #else: #if var is a variable with no dot
-            # for env in [locEnv, varEnv]:
-            #     typesOfArg = env.getVarTypes(arg)
-            #     intersection = [x for x in typesOfArg if x in constraints[0]]
-            #     if intersection == []:
-            #         if env == varEnv:
-            #             return (("error", "Error: Bad type"), constraints)
-            #     else:
-            #         constraints = intersection
-            #         break
     return (arg, constraints)
 
 
