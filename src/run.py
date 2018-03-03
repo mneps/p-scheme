@@ -251,9 +251,6 @@ def function_check(lines_to_evaluate, origLines, funEnv):
                     if i in expression[1]:
                         val = "Error: Name contains reserved symbol"
                         origLines.RaiseException(lineCount, numLines, val, 3)
-                # if expression[1][-2:] == "_f":
-                #     val = "Error: Name contains reserved symbol"
-                #     origLines.RaiseException(lineCount, numLines, val, 3)
 
                 val_list[0] = string_to_list(val_list[0])
 
