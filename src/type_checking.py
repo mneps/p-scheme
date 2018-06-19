@@ -14,6 +14,7 @@ import operator
 import global_vars
 from env import *
 from random import *
+from decimal import Decimal
 
 # The eight functions below are all fairly self-explanatory.
 def isNum(x):
@@ -41,8 +42,11 @@ def isString(x):
     return (x[0] == "\"" and x[-1] == "\"")   #if x is of the "___" format
 
 def isList(x):
-    if x == "" or isNum(x): #"object has no attribute __getitem__" error
+    if x == None or x == "" or isNum(x): #"object has no attribute __getitem__" error
         return False
+
+    if type(x) == list:
+        return True
 
     return (x[0] == "[" and x[-1] == "]")   #if x is of the [___] format
 
@@ -110,7 +114,8 @@ def general_type(arg, constraints, varEnv, locEnv):
             arg_split[0] = arg_split[0][2:]
 
     if arg_split[0] != arg: #if var contains a dot
-        env_fun = lambda acc, x: acc or x.inEnvandType(arg_split[0], arg_split[1])
+        env_fun = lambda acc, x: acc or \
+                                    x.inEnvandType(arg_split[0], arg_split[1])
         if reduce(env_fun, [locEnv, varEnv], False) and \
                                                  arg_split[1] in constraints[0]:
             arg = arg_split[0]
@@ -119,13 +124,14 @@ def general_type(arg, constraints, varEnv, locEnv):
             return (("error", "Error: Argument does not support dot operation"), \
                                                                     constraints)
         elif arg_split[1] not in global_vars.ALL_TYPES:
-            return (("error", "Error: Argument type does not exist"), constraints)
+            return (("error", "Error: Argument type does not exist"), \
+                                                                    constraints)
         elif arg_split[1] not in constraints[0]:
             return (("error", "Error: Bad type"), constraints)
         elif not varEnv.inEnv(arg_split[0]) and not varEnv.inEnv(arg_split[0]):
             return (("error", "Error: Argument does not exist"), constraints)
-        elif isUndesirableType(arg_split[1], locEnv.getVarTypes(arg_split[0])) and \
-           isUndesirableType(arg_split[1], varEnv.getVarTypes(arg_split[0])):
+        elif isUndesirableType(arg_split[1], locEnv.getVarTypes(arg_split[0])) \
+          and isUndesirableType(arg_split[1], varEnv.getVarTypes(arg_split[0])):
             return (("error", "Error: Bad type"), constraints)
     else: #if var is a literal
         env_fun = lambda acc, x: acc or x.inEnv(arg_split[0])
@@ -149,6 +155,7 @@ def general_type(arg, constraints, varEnv, locEnv):
                 elif i == len(constraints[0])-1:
                     return (errorTest, constraints)
         else:
+            print arg
             return (("error", "Error: Argument does not exist"), constraints)
     return (arg, constraints)
 
@@ -170,13 +177,14 @@ def constraintCheck(arg, constraints, varEnv, locEnv):
         break
     return constraints
 
+
 # All arguments are originally entered as a string.  This function "casts" the
 # argument to its actual value.
 def casted(arg):
     if isNum(arg):
         try:
-            if float(arg) == int(float(arg)):
-                return int(float(arg))
+            if Decimal(arg) == int(Decimal(arg)):
+                return int(Decimal(arg))
         except:
             return ("error", "Error: To infinity and beyond")
         return float(arg)
@@ -212,3 +220,39 @@ def getValofType(arg, constraint, varEnv, locEnv):
             continue
 
     return casted(arg) #if arg is not a variable, it must be a literal
+
+
+# Takes in a function name and a function environment and returns the type of
+# the function's parameter.  At the moment, this function is only called on
+# functions of arrity one, but eventually it will be expanded so that in can
+# be called on functions of all arrities.  At that point, the i paramater will
+# be introduced.  The invariant will be 0<=i<function_arrity.
+def get_pattern_type(function, funEnv, i):
+    suffixes = ["<=", ">=", "<>", "=", "<", ">"]
+
+    for j in range(funEnv.getNumFuncs(function)):
+        param = funEnv.getFunc(function)[j][0][1][0][-1][1:-1]
+        if param == "_":
+            continue
+        first_cut = reduce(lambda acc, x: min(acc, \
+                        float("inf") if param.find(x)==-1 \
+                                     else param.find(x)), \
+                                                    suffixes, float("inf"))
+        pattern = param[:first_cut+1]
+        for j in range(len(pattern)):
+            if pattern[j] in suffixes:
+                pattern = pattern[:j]
+                break
+        break
+
+    if pattern == "seven":
+        return ("not_error", "num")
+    literalType = getLiteralType(pattern)
+    if literalType == "nonetype":
+        return ("error", "Error: Bad type")
+    if literalType[0] == "error":
+        return ("error", "Error: Bad pattern")
+    return ("not_error", literalType)
+
+
+

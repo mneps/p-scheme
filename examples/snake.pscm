@@ -77,15 +77,8 @@ done
 	<~ (new_board (board (today i +) get) append) new_board val
 						   (new_board row append) new_board val
 
-    <~					"a" move = if
-    <~			  (1 y -) y_g val
-    <~				"s" move = if
-    <~		  (1 x +) x_g val
-    <~			"d" move = if
-    <~	  (1 y +) y_g val
-    <~		"w" move = if
-    <~	 (1 x -) x_g val
-       	 board play_game
+    <~ move adjust_position ifFalse
+    board play_game
 
     <~ (new_board (today x +) get) (today y +) get "x" = ifTrue
       										true new_snack val
@@ -107,6 +100,24 @@ done
 	board get_new_snack board val
 	board play_game
 done
+
+
+["a"=move] adjust_position define
+	(1 y -) y_g val
+	true
+["s"=move] adjust_position |
+	(1 x +) x_g val
+	true
+["d"=move] adjust_position |
+	(1 y +) y_g val
+	true
+["w"=move] adjust_position |
+	(1 x -) x_g val
+	true
+[_] adjust_position |
+	false
+done
+
 
 [board] print_board define
 	clear_screen

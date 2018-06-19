@@ -13,7 +13,6 @@ import global_vars
 from type_checking import *
 
 
-
 # Handles parsing duties related to quotes and brackets.  This function is
 # necessary for a number of reasons.  Without it, the evaluator would treat
 # certain keywords and functions as code that should be executed, even if the
@@ -71,8 +70,9 @@ def handleQuotesAndBrackets(origExp):
         start = 0
         while expression[i].find("[", start) != -1:
             temp = expression[i][:expression[i].find("[", start)] + \
-                                 noQuotes[noQuotes.find("["):getMatchingBracket(noQuotes)]
-            expression[i] = temp + expression[i][expression[i].find("[", start)+2:]
+                    noQuotes[noQuotes.find("["):getMatchingBracket(noQuotes)]
+            expression[i] = temp + \
+                            expression[i][expression[i].find("[", start)+2:]
             start = len(temp)
             noQuotes = noQuotes[getMatchingBracket(noQuotes):]
 
@@ -144,6 +144,8 @@ def int_float_handling(arg):
 def string_to_list(string):
     if string == "[]":
         return []
+    elif type(string) == list:
+        return string
     else:
         string = string[1:-1]
 
@@ -186,19 +188,40 @@ def string_to_list(string):
 
     return new_list
 
-# Turns a list into a string
+
+# Turns a list into a string.  Uses the stringify() function as a helper
+# function.
 def list_to_string(my_list):
     if my_list == []:
         return "[]"
 
-    new_string = "[" + str(my_list[0])
+    new_string = "[" + stringify(my_list[0], "")
     my_list = my_list[1:]
 
     for x in my_list:
-        new_string = new_string + ", " + str(x)
+        new_string = new_string + ", " + stringify(x, "")
     new_string += "]"
 
     return new_string
+
+
+# This function handles the potentially recursive nature of turning a list into
+# a string.  If the original list contains elements that are lists than those
+# lists will need to be turned into strings as well.
+def stringify(elem, string):
+    if type(elem) == list:
+        if elem == []:
+            return "[]"
+
+        string = "[" + stringify(elem[0], string)
+        elem = elem[1:]
+        for x in elem:
+            string = string + ", " + stringify(x, string)
+        return string + "]"        
+    elif type(elem) == str:
+        return elem
+    else:
+        return str(elem)
 
 
 # If a list has a maybe value in it, this function turns that maybe into either
@@ -212,12 +235,45 @@ def handle_maybe(string):
     return list_to_string(new_string)
 
 
+# If a list has a 7 value in it, this function returns an error.  If the list
+# has seven in it, this function turns the seven into 7.  This function uses
+# the scan_for_7s() and replace_sevens() functions as helper functions.
+def handle_seven(string):
+    if string_check(string) != None:
+        return string
+
+    if scan_for_7s(string):
+        return True
+
+    if string != "[]":
+        a = string_to_list(string)
+    return list_to_string(replace_sevens(string))
+
+
+# Ensure that a list contains no 7s.  Return True if a 7 is present and False
+# otherwise.
+def scan_for_7s(string):
+    my_list = string_to_list(string)
+    helper = lambda x: scan_for_7s(x) if isList(x) else True if x==7 else False
+    return reduce(lambda acc, x: acc or helper(x), my_list, False)
+
+
+# Replaces the seven function with the number 7 and returns the updated list.
+# If no sevens are present, the original list is returned.
+def replace_sevens(string):
+    my_list = string_to_list(string)
+    helper = lambda x: replace_sevens(x) if isList(x) \
+                                         else 7 if x=="seven" else x
+    return map(helper, my_list)
+
+
 # Ensures that all elements of a list are valid (eg. variables are defined,
 # types are correct, etc.)
-def list_check(a_list, varEnv, locEnv):
-    list_arg = string_to_list(a_list)
+def list_check(string, varEnv, locEnv):
+    list_arg = string_to_list(string)
     for i in list_arg:
-        (error, _) = general_type(str(i), [global_vars.ALL_TYPES], varEnv, locEnv)
+        (error, val) = \
+                general_type(str(i), [global_vars.ALL_TYPES], varEnv, locEnv)
         if error != "" and error[0] == "error":
             return error
 
@@ -231,15 +287,16 @@ def string_check(string):
                     (noQuotes[i-1] != "," or noQuotes[i+1] == "]")) or \
                (noQuotes[i] == "," and \
                     (noQuotes[i+1] != " " or noQuotes[i-1] == "[")):
-                return ("error", "Error: Argument does not exist")
+                return ("error", "Error: Bad list format")
         except:
-            return ("error", "Error: Argument does not exist")
+            return ("error", "Error: Bad list format")
 
 
 # Ensures no element of a list is a literal (called in the function_check()
-# function in run.py).
+# function in the pscm file).  If there are four quotes in the argument the
+# format will be checked in the string pattern matching class.
 def var_check(a_list):
-    return reduce(lambda acc, x: (acc or isLiteral(x)), a_list, False)
-
-
+    isNon_numLiteral = lambda x: isBool(x) or \
+              (isString(x) and x.count("\"") != 4) or isList(x) or isNothing(x)
+    return reduce(lambda acc, x: (acc or isNon_numLiteral(x)), a_list, False)
 

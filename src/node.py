@@ -9,10 +9,12 @@
 # explained in more detail below.
 #
 
+import sys
 import global_vars
 from define_primitive import *
 from list_string_handling import *
 from type_checking import *
+
 
 
 class Node:
@@ -44,7 +46,6 @@ class Node:
         self.children[i] = newChild
 
 
-
     # This function takes in a node expression tree and evaluates it by 
     # recursively calling this function on that node's children.  Along the way,
     # the function checks to make sure it is not evaluating the "useless" branch
@@ -53,12 +54,9 @@ class Node:
     # part of a conditional or loop would be evaluated without this check.  A
     # A consequence of this method is that if there is an error in the garbage
     # part of the conditional or loop, the evaluator will not find it (although
-    # this is not necessarily a bad thing).
+    # this is not necessarily a bad thing).  This function also calls the
+    # __pattern_matching() function.
     def evaluate(self, varEnv, funEnv, locEnv):
-        top_level_functions = ["check-error", "check-expect", "define", "done"]
-        if not self.root and self.val in top_level_functions:
-            return ("error", "Error: Function is top-level")
-
         checks = ["check-error", "check-expect"]
         if self.val in checks and global_vars.user_function > 0:
             return ("error", "Error: Can't check within a function")
@@ -85,18 +83,63 @@ class Node:
         else:
             return ("not_error", self.val)
 
-        (fun, op) = funEnv.getVal(self.val, "function")[:2]
+        args = reduce(lambda acc, x: acc+[x.result], self.children, [])
+        args = filter(lambda x: x != None, args)
+
         if self.val not in global_vars.PRIMITIVES:
             global_vars.curr_function.append(self.val)
 
-        args = reduce(lambda acc, x: acc+[x.result], self.children, [])
-        args = filter(lambda x: x != None, args)
-        #print args
-        #args = []
-        #for i in range(numChildren):
-        #    args.append(self.children[i].result)
-        (error, val) = fun(args, varEnv, locEnv, funEnv, op, self.id_num)
+        if funEnv.getNumFuncs(self.val) == 1:
+            (fun, op) = funEnv.getVal(self.val, "function")[:2]
+            try:
+                (error, val) = fun(args, varEnv, locEnv, funEnv, op, self.id_num)
+            # otherwise when the user uses the exit() function the "Recursion 
+            # too deep" error will print
+            except SystemExit:
+                exit(0)
+            except:
+                return ("error", "Error: Recursion too deep")
+        else:
+            return self.__pattern_matching(funEnv, varEnv, locEnv, args)
+
         return (error, str(val))
+
+
+    # This function serves as a helper function for the evaluate() function.  It
+    # checks to make sure the input to the function is valid and then checks the
+    # input against the function's patterns to find the correct version of
+    # the function to call.
+    def __pattern_matching(self, funEnv, varEnv, locEnv, args):
+        param = funEnv.getFunc(self.val)[0][0][1][0][-1][1:-1]
+        vals = []
+        for i in range(len(args)):
+            literal_type = get_pattern_type(self.val, funEnv, i)
+            (result, constraint) = \
+              general_type(args[i], [[literal_type[1]]], varEnv, locEnv[-1])
+            if result[0] == "error":
+                return result
+            (error, val) = ("not_error", result)
+            if not isLiteral(val):
+                val = getValofType(val, constraint, varEnv, locEnv[-1])
+            if isString(val) and len(val) > 52 and \
+                                    val[0] == "\"" and val[-1] == "\"":
+                return ("error", "Error: String is too long to match against")
+            vals.append(val)
+
+        vals = map(lambda x: x if x!="maybe" else "true" \
+                                    if randint(0,1)==0 else "false", vals)
+        for i in range(funEnv.getNumFuncs(self.val)):
+            if reduce(lambda acc, x: \
+                    (funEnv.getPM(self.val)).matches(x, i) and acc, vals, True):
+                (fun, body) = funEnv.getFunc(self.val)[i][0][:2]
+                try:
+                    return fun(args, varEnv, locEnv, funEnv, body, self.id_num, i)
+                except SystemExit: # see comment in lines 96-97
+                    exit(0)
+                except:
+                    return ("error", "Error: Recursion too deep")
+            if i == funEnv.getNumFuncs(self.val)-1:
+                return ("error", "Error: Input matches no patterns")
 
 
     # Detailing exactly how this algorithm works would be far too complicated,
@@ -221,7 +264,11 @@ class Node:
         return ("maybe", self) # occurs if var is false
 
 
-    # This is a private helper function to epsteinCheck().
+    # This is a private helper function to epsteinCheck().  Without it, code
+    # like the following:
+    # 5 //rangeFrom val
+    # true false false nor 9 v/ 3 4 - 1 2 * + rangeFrom + 4 = if check-expect
+    # would give an "Incorrect number of arguments" error.
     def __backInTime(self, varEnv, funEnv, locEnv):
         var = locEnv.inEnv(self.val) or varEnv.inEnv(self.val)
         fun = funEnv.inEnv(self.val) and (funEnv.getArrity(self.val) == 0)
@@ -235,18 +282,32 @@ class Node:
 
 
     # This function ensures that the number 7 is not at the leaf-level of a tree
-    def sevenCheck (self):
+    # either as a number or as an element in a list.  The function returns True
+    # if the number 7 is present and False otherwise.  It also ensures that
+    # there are no top-level functions in a node other than at the root of the
+    # tree. 
+    def seven_and_checkCheck (self):
+        top_level_functions = ["check-error", "check-expect", "define", "done"]
+        if not self.root and self.val in top_level_functions:
+            global_vars.check_error = False
+            global_vars.check_expect = False
+            return ("error", "Error: Function is top-level")
+
         if self.numChildren != -1:
             for i in range(self.numChildren):
-                if (self.children[i].sevenCheck()):
-                    return True
-        else:
-            try:
-                if int(float(self.val)) == 7:
-                    return True
-            except:
-                return False
-        return False
+                result = self.children[i].seven_and_checkCheck()
+                if result[0] == "error":
+                    return result
+        elif isNum(self.val) and int(float(self.val)) == 7:
+            return ("error", "Error: Argument is 7")
+        if isList(self.val):
+            result = handle_seven(self.val)
+            if result == ("error", "Error: Argument is 7"):
+                return result
+            else:
+                self.val = result
+
+        return ("not_error", "all good")
 
 
     # Returns the node with the specified ID number
@@ -258,4 +319,11 @@ class Node:
             if (self.children[i]).get_node(desired_id) != None:
                 return (self.children[i]).get_node(desired_id)
 
+
+    # For testing purposes only
+    def printTree(self):
+        print self.val, self.numChildren#, self.id_num
+        if self.numChildren != -1:
+            for i in range(self.numChildren):
+                self.children[i].printTree()
 

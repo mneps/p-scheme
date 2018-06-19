@@ -88,6 +88,8 @@ def numArrityTwo(args, varEnv, locEnv, funEnv, op, id_num):
         return val_list
     try:
         result = op(val_list[0], val_list[1])
+        if op == operator.div:
+            result = op(float(val_list[0]), float(val_list[1]))
         if not isinstance(result, list): #range returns a list
             if int(result) == result:
                 result = int(result)
@@ -687,14 +689,13 @@ def castNonetype(args, varEnv, locEnv, funEnv, op, id_num):
 # because of the necssary error-checking and because it is specialized
 # enought that definePrimitive() can't really be called.
 def defineVar(args, varEnv, locEnv, funEnv, op, id_num=None):
-    #print args
     if len(args) != 2:
         return ("error", "Error: Incorrect number of arguments")
     constraints = [[global_vars.ALL_TYPES]]
 
     for arg in args:
        if isList(arg) and string_check(arg) != None:
-           return string_check(arg)
+            return string_check(arg)
 
     val_list = []
     (toAppend, constraints[0][0]) = general_type(args[1], constraints[0], \
@@ -703,17 +704,8 @@ def defineVar(args, varEnv, locEnv, funEnv, op, id_num=None):
         return toAppend
     val_list.append(toAppend)
 
-
-    reserved_terms = ["error", "it", "val", "check-expect", "check-error", \
-                      "if", "ifTrue", "ifFalse", "while", "empty", "for", \
-                      "in", "define", "done"]
-    reserved_symbols = ["\"", "[", "]", "<~", ".", "<'>"]
-
-    if isLiteral(args[0]) or args[0] in reserved_terms:
+    if isLiteral(args[0]) or args[0] in global_vars.VARIABLE_RESERVED_TERMS:
         return ("error", "Error: Name is reserved")
-    for i in reserved_symbols:
-        if i in args[0]:
-            return ("error", "Error: Name contains reserved symbol")
     if "//" in args[0][2:] or args[0][:-2] == "_g":
         return ("error", "Error: Name contains reserved symbol")
 
@@ -722,6 +714,9 @@ def defineVar(args, varEnv, locEnv, funEnv, op, id_num=None):
             args[0] = args[0][2:]
         elif args[0][:2] == "//" and not funEnv.inEnv(args[0][2:]):
             return ("error", "Argument is not a function")
+
+    if re.sub('\W+', "", args[0]) != args[0]:
+        return ("error", "Error: Name contains reserved symbol")
 
     if isNum(val_list[0]):
         if float(val_list[0]) == int(float(val_list[0])):
@@ -733,7 +728,6 @@ def defineVar(args, varEnv, locEnv, funEnv, op, id_num=None):
                         list_check(val_list[0], varEnv, locEnv[-1]) != None:
         return list_check(val_list[0], varEnv, locEnv[-1])
 
-    #print "HERE", args
     if global_vars.user_function > 0 and args[0][-2:] != "_g":
         locEnv[-1].addBind(args[0], val_list[0], constraints[0])
     else:
@@ -869,7 +863,6 @@ def condArrityTwo(args, varEnv, locEnv, funEnv, op, id_num):
         return ("error", "Error: Bad type")
 
 
-
 # While loops
 def wloop(args, varEnv, locEnv, funEnv, op, id_num, prev_val="Nothing"):
     tree_section = global_vars.curr_tree[-1].get_node(id_num)
@@ -886,12 +879,16 @@ def wloop(args, varEnv, locEnv, funEnv, op, id_num, prev_val="Nothing"):
             body = (tree_section.getChild(1)).evaluate(varEnv, funEnv, locEnv)
             if body[0] == "error":
                 return body
-            return wloop([], varEnv, locEnv, funEnv, op, id_num, body[1])
+            try:
+                return wloop([], varEnv, locEnv, funEnv, op, id_num, body[1])
+            except:
+                return ("error", "Error: Infinite loop")
         else:
             prev_val = ("not_error", prev_val)
             return verifyResult(prev_val, varEnv, locEnv)
     else:
         return ("error", "Error: Bad type")
+
 
 # For loops
 def floop(args, varEnv, locEnv, funEnv, op, id_num, prev_val="Nothing", \
@@ -951,6 +948,26 @@ def claim(args, varEnv, locEnv, funEnv, op, id_num):
     return ("error", "Error: Claim can't be verified or disproven")
 
 
+# Determines whether or not the parameter in the function header is simply a
+# variable (eg. "n") or is part of a pattern (eg. "1=n").  It returns the name
+# of the parameter.
+def __parse_parameter(param):
+    suffixes = ["<=", ">=", "<>", "=", "<", ">"]
+    first_cut = reduce(lambda acc, x: min(acc, \
+                            float("inf") if param.find(x)==-1 \
+                                         else param.find(x)), \
+                                                        suffixes, float("inf"))
+
+    param = param[first_cut+1:]
+    if reduce(lambda acc, x: acc or param[0] == x, [">", "<", "="], False):
+        param = param[1:]
+
+    for j in suffixes:
+        if j in param:
+            param = param[:param.find(j)]
+
+    return param
+
 # User-defined functions are evaluated similarly to evaluate() in run.py.  Each
 # user-defined function has the entire function definition stored in the
 # function environment.  When a user-defined function needs to be evaluated, the
@@ -961,9 +978,15 @@ def claim(args, varEnv, locEnv, funEnv, op, id_num):
 # a function returns, its variable environment is popped off the stack.  The
 # value returned from a function is simply the value of the last expression that
 # was evaluated within a function.
-def userFun(args, varEnv, locEnv, funEnv, op, id_num):
-    params = string_to_list(funEnv.getVal(global_vars.curr_function[-1], \
-                                                        "function")[1][0][2])
+def userFun(args, varEnv, locEnv, funEnv, body, id_num, pm=0):
+    params = string_to_list(funEnv.getFunc(global_vars.curr_function[-1])[pm][0][1][0][2])
+
+    if funEnv.getNumFuncs(global_vars.curr_function[-1]) != 1:
+        for i in range(len(params)):
+            if params[i] != "_" and \
+                reduce(lambda acc, x: acc or x in params[i], \
+                                                [">", "<", "="], False):
+                params[i] = __parse_parameter(params[i])
 
     if len(params) != len(args):
         return ("error", "Error: Incorrect number of arguments")
@@ -971,15 +994,15 @@ def userFun(args, varEnv, locEnv, funEnv, op, id_num):
     global_vars.user_function += 1
     locEnv.append(Environment())
     for i in range(len(args)):
-        # line below is necessary because an argument could exist only in the
-        # local environment of the previous function called
         args[i] = ("not_error", args[i])
         arg = str(verifyResult(args[i], varEnv, locEnv[:-1])[1])
-        result = defineVar([params[i], arg], varEnv, locEnv, funEnv, None)
-        if result[0] == "error":
-            return result
 
-    expressions = funEnv.getVal(global_vars.curr_function[-1], "function")[1][1:]
+        if not isNum(params[i]) and params[i] != "_":
+            result = defineVar([params[i], arg], varEnv, locEnv, funEnv, None)
+            if result[0] == "error":
+                return result
+
+    expressions = body[1:]
     for i in range(len(expressions)):
         emptyTree = ExpressionTree(expressions[i])
         expTree = makeTree(emptyTree, funEnv, 0, False)
@@ -987,23 +1010,38 @@ def userFun(args, varEnv, locEnv, funEnv, op, id_num):
         global_vars.curr_tree.append(expTree)
 
         if emptyTree.get_string_length() == 0:
-            if expTree.sevenCheck():
-                return ("error@"+str(i), "Error: Argument is 7")
+            result = expTree.seven_and_checkCheck()
+            if result[0] == "error":
+                return ("error@"+str(i)+";"+str(pm), result[1])
             else:
                 (error, val) = expTree.evaluate(varEnv, funEnv, locEnv)
                 if error != "not_error":
                     if "@" in error:
                         return (error, val)
                     else:
-                        return (error+"@"+str(i), val)
+                        return (error+"@"+str(i)+";"+str(pm), val)
                 val = val.replace("<'>", "\"")
                 varEnv.addBindit("it", val)
         else:
-            return ("error@"+str(i), "Error: Incorrect number of arguments")
+            return ("error@"+str(i)+";"+str(pm), "Error: Incorrect number of arguments")
         global_vars.curr_tree.pop()
-
 
     locEnv.pop()
     global_vars.curr_function.pop()
     global_vars.user_function -= 1
-    return (error, val)
+    return (error, handle_bool(val))
+
+
+# This short function is necessary because if a function wishes to simply return
+# a boolean value, the evaluator will "evaluate" the p-scheme boolean and turn
+# it into a python boolean before casting it to a string.  This will ultimately
+# lead to an "argument does not exist" error because python booleans will not
+# be interpreted as p-scheme literals
+def handle_bool(val):
+    if val == "True":
+        return "true"
+    if val == "False":
+        return "false"
+    return val
+
+

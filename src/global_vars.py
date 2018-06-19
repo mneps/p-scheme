@@ -25,6 +25,9 @@ PRIMITIVES = ["it", "+", "-", "*", "/", "%", "^", "!", "v/", "int", "and", \
 			  "for", "claim", "define", "done", "wholesomeRemark", "exit", \
 			  "random", "write", "getch", "clear_screen", "map", "fold", \
 			  "filter", "all", "exists"]
+VARIABLE_RESERVED_TERMS = ["error", "it", "val", "check-expect", \
+                           "check-error", "if", "ifTrue", "ifFalse", "while", \
+                           "empty", "for", "in", "define", "done"]
 function_check = False
 user_function = 0
 curr_function = []

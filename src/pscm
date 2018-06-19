@@ -1,8 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
 
 # 
 # Matthew Epstein
-# run.py
+# pscm
 # This file is the foundation for all of p-scheme.  Contained within are
 # functions to initialize the environments, parse the file, evaluate an
 # expression, and handle errors.  Many of functions in this file are quite
@@ -31,6 +32,7 @@ from getch import *
 from makeTree import *
 from node import *
 from list_string_handling import *
+from pattern_matching import *
 from primitives import *
 
 
@@ -93,7 +95,7 @@ def addPrimitives():
     funEnv.addBind("seven", (arrityZero, (lambda: 7), 0))
     funEnv.addBind("clear_screen", \
                         (arrityZero, (lambda: print("\033[H\033[J")), 0))
-    funEnv.addBind("exit", (arrityZero, (lambda: exit(0)), 0))
+    funEnv.addBind("exit", (arrityZero, (lambda: exit(1)), 0))
     funEnv.addBind("wholesomeRemark", (happy, None, 0))
     funEnv.addBind("++", (concat, operator.add, 2))
     # casting
@@ -168,14 +170,20 @@ def condense_lines(line, lines, lineCount, origLines, numLines, fullExp, \
 
 
 
-# Does an initial scan of the document passed in and uses the condense_lines()
+# Does an initial scan of the file passed in and uses the condense_lines()
 # function to modify the lines that are to be evaluated in the evaluate()
 # function.  Specifically, the function strips the file of comments and adds
 # user-defined functions to the function environment.  After a user-defined
-# function has been added, that function definition is erased from the file,
+# function has been added, that function definition is erased from the file.
 # evaluate() would otherwise evaluate the function definition, which is
 # obviously incorrect: a function should only be evaluated when it is actually
-# called.
+# called.  This function ensures every user-defined function is in an acceptable
+# format.  It also initializes the pattern matching classes.  It looks through
+# the various function definitions, adds the patterns, and will raise errors if
+# a pattern is of a bad format, if patterns are over-exhaustive (i.e. an input
+# could match against two different patterns), or if patterns are
+# under-exhaustive (i.e. there exists an input that would not match against any
+# pattern).
 def function_check(lines_to_evaluate, origLines, funEnv):
     global_vars.function_check = True
     lineCount = 0
@@ -220,62 +228,96 @@ def function_check(lines_to_evaluate, origLines, funEnv):
             if function_definition:
                 val = "Error: Can't define a function within a function"
                 origLines.RaiseException(lineCount, numLines, val, 3)
-            else:
-                if len(expression) != 3:
-                    val = "Error: Incorrect number of arguments"
+            if len(expression) != 3:
+                val = "Error: Incorrect number of arguments"
+                origLines.RaiseException(lineCount, numLines, val, 3)
+            if isList(expression[2]) and string_check(expression[2]) != None:
+                (error, val) = string_check(expression[2])
+                origLines.RaiseException(lineCount, numLines, val, 3)
+
+            constraints = [[["list"]]]
+            empty = Environment()
+            (toAppend, constraints[0][0]) = \
+                    general_type(expression[2], constraints[0], empty, empty)
+            if toAppend[0] == "error":
+                origLines.RaiseException(lineCount, numLines, toAppend[1], 3)
+            val_list = [toAppend]
+
+            if var_check(string_to_list(expression[2])):
+                val = "Error: Word is reserved"
+                origLines.RaiseException(lineCount, numLines, val, 3)
+
+            reserved_terms = global_vars.PRIMITIVES + \
+                                            ["error,", "it", "in", "done"]
+            reserved_symbols = ["\"", "[", "]", "<~", ".", "<'>", "//", "|"]
+
+            if isLiteral(expression[1]) or expression[1] in reserved_terms:
+                val = "Error: Word is reserved"
+                origLines.RaiseException(lineCount, numLines, val, 3)
+            for i in reserved_symbols:
+                if i in expression[1]:
+                    val = "Error: Name contains reserved symbol"
                     origLines.RaiseException(lineCount, numLines, val, 3)
-                constraints = [[["list"]]]
 
-                if isList(expression[2]) and string_check(expression[2]) != None:
-                    (error, val) = string_check(expression[2])
-                    origLines.RaiseException(lineCount, numLines, val, 3)
+            val_list[0] = string_to_list(val_list[0])
 
-                empty = Environment()
-                (toAppend, constraints[0][0]) = \
-                        general_type(expression[2], constraints[0], empty, empty)
-                if toAppend[0] == "error":
-                    origLines.RaiseException(lineCount, numLines, toAppend[1], 3)
-                val_list = [toAppend]
-
-                if var_check(string_to_list(expression[2])):
-                    val = "Error: Word is reserved"
-                    origLines.RaiseException(lineCount, numLines, val, 3)
-
-                reserved_terms = global_vars.PRIMITIVES + ["it", "in", "done"]
-                reserved_symbols = ["\"", "[", "]", "<~", ".", "<'>", "//"]
-
-                if isLiteral(expression[1]) or expression[1] in reserved_terms:
-                    val = "Error: Word is reserved"
-                    origLines.RaiseException(lineCount, numLines, val, 3)
-                for i in reserved_symbols:
-                    if i in expression[1]:
-                        val = "Error: Name contains reserved symbol"
-                        origLines.RaiseException(lineCount, numLines, val, 3)
-
-                val_list[0] = string_to_list(val_list[0])
-
-                function_definition = True
-                function_lineCount = lineCount
-                function_numLines = numLines
-                name = expression[1]
-                arrity = len(val_list[0]) 
-                function_body = [expression]
-                for i in range(line-numLines, line+1):
-                    lines_to_evaluate[i] = ""
-                continue
+            function_definition = True
+            function_lineCount = lineCount
+            function_numLines = numLines
+            name = expression[1]
+            arrity = len(val_list[0]) 
+            function_body = [expression]
+            for i in range(line-numLines, line+1):
+                lines_to_evaluate[i] = ""
+            continue
         elif function_definition:
             if expression == ["done"]:
                 function_definition = False
                 funEnv.addBind(name, \
-                    (userFun, function_body, arrity, [function_lineCount, line]))
+                   (userFun, function_body, arrity, [function_lineCount, line]))
                 for i in range(line-numLines, line+1):
                     lines_to_evaluate[i] = ""
+                if funEnv.getNumFuncs(name) != 1:
+                    literalType = get_pattern_type(name, funEnv, 0) #0 will eventually change to an iterator in a for loop
+                    if literalType[0] == "error":
+                        start = funEnv.getFunc(name)[0][0][3][0]
+                        origLines.RaiseException(start, 1, literalType[1], 3)
+                    else:
+                        PM = PatternMatching(literalType[1])
+                    for i in range(funEnv.getNumFuncs(name)):
+                        param = funEnv.getFunc(name)[i][0][1][0][-1][1:-1]
+                        (error, val) = PM.addPattern(param)
+                        if error == "error":
+                            start = funEnv.getFunc(name)[i][0][3][0]-1
+                            end = funEnv.getFunc(name)[i][0][3][1]-1
+                            numLines = end - start
+                            origLines.RaiseException(start+numLines, \
+                                                            numLines, val, 3)
+                    if not PM.isComplete():
+                        start = funEnv.getFunc(name)[0][0][3][0]-1
+                        end = funEnv.getFunc(name)\
+                                        [len(funEnv.getFunc(name))-1][0][3][1]
+                        numLines = end - start + 1
+                        val = "Error: Pattern matching not exhaustive"
+                        origLines.RaiseException(start+numLines, \
+                                                            numLines, val, 3)
+                    else:
+                        funEnv.addPM(name, PM)
+
+            elif expression[0] == "|":
+                funEnv.addBind(name, \
+                   (userFun, function_body, arrity, [function_lineCount, line]))
+                for i in range(line-numLines, line):
+                    lines_to_evaluate[i] = ""
+                function_lineCount = line + 1
+                function_body = [expression]
+
             else:
                 function_body.append(expression)
                 for i in range(line-numLines, line+1):
                     lines_to_evaluate[i] = ""
         else:
-            if expression == ["done"]:
+            if expression == ["done"] or expression[0] == "|":
                 val = "Error: No function definition in progress"
                 origLines.RaiseException(lineCount, numLines, val, 3)
         numLines = 1
@@ -292,10 +334,13 @@ def function_check(lines_to_evaluate, origLines, funEnv):
 # the line within the function where the error occurs.  This function ensures
 # that that happens.
 def getErrorLine(funEnv, origLines, error):
-    global_vars.function_error_check = True
-    fun_start = funEnv.getVal(global_vars.curr_function[-1], "function")[3][0]
-    fun_stop = funEnv.getVal(global_vars.curr_function[-1], "function")[3][1]
+    (error, pm) = error.split(";")#[error, int(error.split("@")[1])+1
+    pm = int(pm)
     error_num = int(error.split("@")[1])+1
+
+    global_vars.function_error_check = True
+    fun_start = (funEnv.getFunc(global_vars.curr_function[-1])[pm][0][-1][0])
+    fun_stop  = (funEnv.getFunc(global_vars.curr_function[-1])[pm][0][-1][1])
 
     lines = []
     for i in range(fun_start+1, fun_stop+1):
@@ -381,10 +426,12 @@ def evaluate(lines, origLines, varEnv, funEnv):
         expTree = makeTree(emptyTree, funEnv, 0, False)
         expTree.epsteinCheck(varEnv, funEnv, emptyTree, [locEnv])
         global_vars.curr_tree.append(expTree)
+        #expTree.printTree()
 
         if emptyTree.get_string_length() == 0:
-            if expTree.sevenCheck():
-                (error, val) = ("error", "Error: Argument is 7")
+            result = expTree.seven_and_checkCheck()
+            if result[0] == "error":
+                (error, val) = result
             else:
                 (error, val) = expTree.evaluate(varEnv, funEnv, [locEnv])
                 val = val.replace("<'>", "\"")

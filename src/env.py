@@ -10,12 +10,14 @@
 
 
 import time
+import global_vars
 
 class Environment:
 
     # Initializes the environment to an empty dictionary
     def __init__(self):
         self.env = dict()
+        self.PMs = dict() # only necessary for the function environment
 
     # Returns True if a variable is in the environment and False otherwise
     def inEnv(self, var):
@@ -70,7 +72,11 @@ class Environment:
                 for existing_var in self.env[var]:
                     if existing_var[1] == self.__getType(val):
                         # Option C
-                        self.env[var][counter] = (val, self.__getType(val))  
+                        if self.__getType(val) == "function" and var not in global_vars.PRIMITIVES:
+                            if val[1][0][0] == "|":
+                                (self.env[var]).append((val, self.__getType(val)))
+                        else:
+                            self.env[var][counter] = (val, self.__getType(val))
                         break
                     counter += 1
                 if counter == len(self.env[var]):
@@ -141,6 +147,22 @@ class Environment:
         except:
             return None
 
+    # Returns the number of functions a pattern-matching function contains
+    def getNumFuncs(self, var):
+        return len(self.env[var])
+
+    # Returns all information pertaining to a function
+    def getFunc(self, var):
+        return self.env[var]
+
+    # Adds a function-pattern matching entry to the PMs dictionary
+    def addPM(self, name, pm):
+        self.PMs[name] = pm
+
+    # Returns the PM_Nums class associated with the given functions
+    def getPM(self, name):
+        return self.PMs[name]
+
     # Returns the type of a variable.  This is a private function, only intended
     # to be used by the bind functions.
     def __getType(self, arg):
@@ -163,6 +185,9 @@ class Environment:
             else:
                 return "function"
 
+
+    def printTest(self, var):
+        print self.env[var], len(self.env[var])
 
 
 

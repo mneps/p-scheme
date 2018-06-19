@@ -10,7 +10,7 @@
 
 
 import global_vars
-from exceptions import *
+from error_handling import *
 
 comment = False
 comment_start_line = None
